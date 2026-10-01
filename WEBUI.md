@@ -70,7 +70,9 @@ Bump both for each release.
 ## Releasing and pinning
 
 1. Bump `versionName` (and `versionCode`) in `app/build.gradle`, commit to `master`.
-2. Push a tag `webui-v<versionName>`, e.g. `git tag webui-v0.53.0-webui.1 && git push origin webui-v0.53.0-webui.1`.
+2. Either push a tag `webui-v<versionName>` (e.g. `git tag webui-v0.53.0-webui.1 && git push origin webui-v0.53.0-webui.1`),
+   or run the **WebUI Release** workflow manually (Actions tab / `gh workflow run webui_release.yml --ref master`);
+   the manual run builds `master` and creates the tag `webui-v<versionName from app/build.gradle>` at that commit.
 3. `.github/workflows/webui_release.yml` runs `./gradlew assembleRelease`, and creates the GitHub release for
    the tag with two assets:
    - `webui-termux-api_v<versionName>.apk`
