@@ -61,6 +61,15 @@ ordinary apps cannot.
 Android Settings should show only permissions the app can actually be asked for. A removed method is
 only logged by the receiver (as any unknown method), so the caller times out waiting for the app.
 
+## Changes in webui.4
+
+- New method `Permission`: `--esa permissions <names>` (full names, such as
+  `android.permission.CAMERA`) answers one JSON object mapping each to
+  `granted` or `denied`; with `--ez request true` it shows Android's own
+  dialog for the ones not yet granted and answers after it, `denied` becoming
+  `permanentlyDenied` when Android will not ask again. Only Android's answer
+  is passed on; nothing is stored. Used by `permission_handler_webui`.
+
 ## Changes in webui.3
 
 - `JobScheduler` removed: it runs scripts through the Termux app, which this fork does not need or have.

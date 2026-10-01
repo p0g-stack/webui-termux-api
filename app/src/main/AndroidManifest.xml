@@ -93,6 +93,12 @@
             android:excludeFromRecents="true"
             android:exported="false" />
 
+        <activity android:name=".apis.PermissionAPI$PermissionActivity"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:noHistory="false"
+            android:excludeFromRecents="true"
+            android:exported="false" />
+
         <activity android:name=".apis.DialogAPI$DialogActivity"
             android:theme="@style/DialogTheme"
             android:noHistory="true"

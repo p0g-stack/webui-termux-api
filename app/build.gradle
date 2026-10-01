@@ -13,8 +13,8 @@ android {
         applicationId "com.webui.termux.api"
         minSdk project.properties.minSdkVersion.toInteger()
         targetSdk project.properties.targetSdkVersion.toInteger()
-        versionCode 1005
-        versionName "0.53.0-webui.3"
+        versionCode 1006
+        versionName "0.53.0-webui.4"
 
         if (appVersionName) versionName = appVersionName
         validateVersionName(versionName)
