@@ -240,6 +240,32 @@ public class NotificationAPI {
             }
         }
 
+        String styleType = intent.getStringExtra("type");
+        if (Objects.equals(styleType, "media")) {
+            String mediaPrevious = intent.getStringExtra("media-previous");
+            String mediaPause = intent.getStringExtra("media-pause");
+            String mediaPlay = intent.getStringExtra("media-play");
+            String mediaNext = intent.getStringExtra("media-next");
+
+            if (mediaPrevious != null && mediaPause != null && mediaPlay != null && mediaNext != null) {
+                if (smallIconName == null) {
+                    notification.setSmallIcon(android.R.drawable.ic_media_play);
+                }
+
+                PendingIntent previousIntent = createAction(context, mediaPrevious);
+                PendingIntent pauseIntent = createAction(context, mediaPause);
+                PendingIntent playIntent = createAction(context, mediaPlay);
+                PendingIntent nextIntent = createAction(context, mediaNext);
+
+                notification.addAction(new NotificationCompat.Action(android.R.drawable.ic_media_previous, "previous", previousIntent));
+                notification.addAction(new NotificationCompat.Action(android.R.drawable.ic_media_pause, "pause", pauseIntent));
+                notification.addAction(new NotificationCompat.Action(android.R.drawable.ic_media_play, "play", playIntent));
+                notification.addAction(new NotificationCompat.Action(android.R.drawable.ic_media_next, "next", nextIntent));
+
+                notification.setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
+                        .setShowActionsInCompactView(0, 1, 3));
+            }
+        }
 
         if (groupKey != null) notification.setGroup(groupKey);
 

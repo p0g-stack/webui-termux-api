@@ -61,21 +61,12 @@ ordinary apps cannot.
 Android Settings should show only permissions the app can actually be asked for. A removed method is
 only logged by the receiver (as any unknown method), so the caller times out waiting for the app.
 
-## Removed methods (webui.3)
+## Changes in webui.3
 
-The app plane keeps only methods that need an app identity: an activity on screen, a per-app system
-service or a runtime permission (inventory: the project's `research/termux-api-inventory.md`). Removed,
-because the page draws it, every manager already has it, or root does it with a stock command:
-`AudioInfo`, `BatteryStatus`, `Brightness`, `Dialog`, `Download`, `JobScheduler` (needs Termux),
-`MediaPlayer`, `MediaScanner`, `NotificationList`, `Toast`, `Usb`, `Vibrate`, `Volume`, `Wallpaper`,
-`WifiConnectionInfo`, `WifiScanInfo`, `WifiEnable`; the media style of `Notification`; the app's Settings
-screen. Permissions removed with them: `ACCESS_WIFI_STATE`, `CHANGE_WIFI_STATE`, `INTERNET`,
-`REQUEST_DELETE_PACKAGES`, `REQUEST_INSTALL_PACKAGES`, `SET_WALLPAPER`, `WRITE_SETTINGS`, `DUMP`,
-`PACKAGE_USAGE_STATS`. Dependencies removed: `androidx.media`, `androidx.preference` (termux-shared may
-still pull the latter in).
-
-An unknown `api_method` now gets an answer (`Unknown api_method: <name>`) instead of only a log line, so a
-caller built for a newer app fails at once.
+- `JobScheduler` removed: it runs scripts through the Termux app, which this fork does not need or have.
+- An unknown `api_method` now gets an answer (`Unknown api_method: <name>`) instead of only a log line, so
+  a caller built for a newer app fails at once.
+- Package-derived names come from `getPackageName()` at startup (next section).
 
 ## Renaming per module
 
