@@ -15,8 +15,6 @@ android {
         targetSdk project.properties.targetSdkVersion.toInteger()
         versionCode 1004
         versionName "0.53.0-webui.2"
-        // Only English strings: the app's UI is a permission dialog and errors.
-        resourceConfigurations += ['en']
 
         if (appVersionName) versionName = appVersionName
         validateVersionName(versionName)
@@ -53,7 +51,7 @@ android {
     buildTypes {
         release {
             minifyEnabled true
-            shrinkResources true
+            shrinkResources false // Reproducible builds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
             signingConfig signingConfigs.webuiTest
         }
