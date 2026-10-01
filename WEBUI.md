@@ -61,6 +61,14 @@ ordinary apps cannot.
 Android Settings should show only permissions the app can actually be asked for. A removed method is
 only logged by the receiver (as any unknown method), so the caller times out waiting for the app.
 
+## Changes in webui.6
+
+- `Clipboard` reads work again on Android 10+, where only the focused app may
+  read the clipboard: a read starts `ClipboardReadActivity`, an invisible
+  activity that reads once it has window focus, answers and finishes. Android
+  12+ shows its usual "pasted from your clipboard" notice with the app's
+  label. Writes stay as upstream (no focus needed). Used by `clipboard_webui`.
+
 ## Changes in webui.5
 
 - New method `DocumentOpen`: `--es dir <folder>` `[--esa mime <types>]`
