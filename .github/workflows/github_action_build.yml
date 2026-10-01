@@ -65,6 +65,14 @@ jobs:
           fi
           echo "checksums-sha256.txt:"$'\n```\n'"$(cat "$APK_DIR_PATH/checksums-sha256.txt")"$'\n```'
 
+      - name: Release APK size
+        run: |
+          ./gradlew assembleRelease
+          for f in app/build/outputs/apk/release/*.apk; do
+            ls -l "$f"
+            unzip -lv "$f" | awk 'NR>3 && $1 ~ /^[0-9]+$/ {split($8,p,"/"); k=(p[1]=="res")?"res":$8; z[k]+=$3} END {for (k in z) if (z[k] > 20000) printf "%-32s %8d KB zipped\n", k, z[k]/1024}'
+          done
+
       - name: Upload files to action
         uses: actions/upload-artifact@v4
         with:
