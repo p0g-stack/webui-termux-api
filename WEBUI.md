@@ -3,7 +3,8 @@
 A repackaged fork of [termux/termux-api](https://github.com/termux/termux-api) (GPLv3, by the Termux
 developers). All copyright headers, the `LICENSE` file and credit to Termux are kept. The API contract is
 unchanged: `TermuxApiReceiver`, the `api_method` extra, the `socket_input` / `socket_output` extras and
-every `apis/*API.java` behave exactly like upstream.
+every remaining `apis/*API.java` behave exactly like upstream. The SMS, contacts, call log and telephony
+methods are removed (see "Removed methods").
 
 Goal: an APK that installs **alongside** any real Termux / Termux:API install, is placed by root modules as a
 system app (`/system/product/app/WebuiTermuxApi/`) and is called by a **root** process:
@@ -50,6 +51,15 @@ ordinary apps cannot.
 | About screen / `TermuxConstants` URLs and names | | unchanged | Cosmetic, credits Termux. |
 | `.github/workflows/github_release_build.yml` | builds on release publish, deletes release+tag on error | removed | Would conflict with the WebUI release workflow. |
 | `.github/workflows/webui_release.yml` | | new | Builds and publishes the signed release APK + `.sha256` on tag `webui-v*`. |
+
+## Removed methods (webui.2)
+
+`CallLog`, `ContactList`, `SmsInbox`, `SmsSend`, `TelephonyCall`, `TelephonyCellInfo` and
+`TelephonyDeviceInfo` (their `apis/*API.java` deleted) and the permissions only they used:
+`READ_CALL_LOG`, `READ_CONTACTS`, `READ_SMS`, `SEND_SMS`, `READ_PHONE_STATE`, `CALL_PHONE`,
+`READ_PRIVILEGED_PHONE_STATE`. No WebUI plugin uses them, and the app is shared by every module, so
+Android Settings should show only permissions the app can actually be asked for. A removed method is
+only logged by the receiver (as any unknown method), so the caller times out waiting for the app.
 
 ## Signing
 

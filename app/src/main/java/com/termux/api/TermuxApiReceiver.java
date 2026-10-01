@@ -11,11 +11,9 @@ import android.widget.Toast;
 import com.termux.api.apis.AudioAPI;
 import com.termux.api.apis.BatteryStatusAPI;
 import com.termux.api.apis.BrightnessAPI;
-import com.termux.api.apis.CallLogAPI;
 import com.termux.api.apis.CameraInfoAPI;
 import com.termux.api.apis.CameraPhotoAPI;
 import com.termux.api.apis.ClipboardAPI;
-import com.termux.api.apis.ContactListAPI;
 import com.termux.api.apis.DialogAPI;
 import com.termux.api.apis.DownloadAPI;
 import com.termux.api.apis.FingerprintAPI;
@@ -32,11 +30,8 @@ import com.termux.api.apis.NotificationListAPI;
 import com.termux.api.apis.SAFAPI;
 import com.termux.api.apis.SensorAPI;
 import com.termux.api.apis.ShareAPI;
-import com.termux.api.apis.SmsInboxAPI;
-import com.termux.api.apis.SmsSendAPI;
 import com.termux.api.apis.SpeechToTextAPI;
 import com.termux.api.apis.StorageGetAPI;
-import com.termux.api.apis.TelephonyAPI;
 import com.termux.api.apis.TextToSpeechAPI;
 import com.termux.api.apis.ToastAPI;
 import com.termux.api.apis.TorchAPI;
@@ -119,18 +114,8 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                     CameraPhotoAPI.onReceive(this, context, intent);
                 }
                 break;
-            case "CallLog":
-                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.READ_CALL_LOG)) {
-                    CallLogAPI.onReceive(context, intent);
-                }
-                break;
             case "Clipboard":
                 ClipboardAPI.onReceive(this, context, intent);
-                break;
-            case "ContactList":
-                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.READ_CONTACTS)) {
-                    ContactListAPI.onReceive(this, context, intent);
-                }
                 break;
             case "Dialog":
                 DialogAPI.onReceive(context, intent);
@@ -208,37 +193,12 @@ public class TermuxApiReceiver extends BroadcastReceiver {
             case "Share":
                 ShareAPI.onReceive(this, context, intent);
                 break;
-            case "SmsInbox":
-                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.READ_SMS, Manifest.permission.READ_CONTACTS)) {
-                    SmsInboxAPI.onReceive(this, context, intent);
-                }
-                break;
-            case "SmsSend":
-                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.READ_PHONE_STATE, Manifest.permission.SEND_SMS)) {
-                    SmsSendAPI.onReceive(this, context, intent);
-                }
-                break;
             case "StorageGet":
                 StorageGetAPI.onReceive(this, context, intent);
                 break;
             case "SpeechToText":
                 if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.RECORD_AUDIO)) {
                     SpeechToTextAPI.onReceive(context, intent);
-                }
-                break;
-            case "TelephonyCall":
-                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.CALL_PHONE)) {
-                    TelephonyAPI.onReceiveTelephonyCall(this, context, intent);
-                }
-                break;
-            case "TelephonyCellInfo":
-                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.ACCESS_COARSE_LOCATION)) {
-                    TelephonyAPI.onReceiveTelephonyCellInfo(this, context, intent);
-                }
-                break;
-            case "TelephonyDeviceInfo":
-                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.READ_PHONE_STATE)) {
-                    TelephonyAPI.onReceiveTelephonyDeviceInfo(this, context, intent);
                 }
                 break;
             case "TextToSpeech":
