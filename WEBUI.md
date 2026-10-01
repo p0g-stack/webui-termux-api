@@ -61,6 +61,15 @@ ordinary apps cannot.
 Android Settings should show only permissions the app can actually be asked for. A removed method is
 only logged by the receiver (as any unknown method), so the caller times out waiting for the app.
 
+## Changes in webui.5
+
+- New method `DocumentOpen`: `--es dir <folder>` `[--esa mime <types>]`
+  `[--ez multiple true]` opens Android's document picker and copies what the
+  user picks into the folder, answering only once the copies are complete
+  with a JSON array of `{name, mime, size, path}` (empty when cancelled).
+  Unlike `StorageGet`, which answers at once and keeps no name, the caller
+  can use the files immediately. Used by `file_selector_webui`.
+
 ## Changes in webui.4
 
 - New method `Permission`: `--esa permissions <names>` (full names, such as
