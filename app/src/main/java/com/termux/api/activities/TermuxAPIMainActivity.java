@@ -2,8 +2,6 @@ package com.termux.api.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -11,7 +9,6 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.termux.api.TermuxAPIApplication;
 import com.termux.api.TermuxAPIConstants;
-import com.termux.api.settings.activities.TermuxAPISettingsActivity;
 import com.termux.api.util.ViewUtils;
 import com.termux.shared.activity.ActivityUtils;
 import com.termux.shared.activity.media.AppCompatActivityUtils;
@@ -77,24 +74,6 @@ public class TermuxAPIMainActivity extends AppCompatActivity {
         setChangeLauncherActivityStateViews();
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        super.onCreateOptionsMenu(menu);
-        getMenuInflater().inflate(R.menu.activity_termux_api_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
-
-        if (id == R.id.menu_settings) {
-            openSettings();
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
 
 
 
@@ -211,8 +190,5 @@ public class TermuxAPIMainActivity extends AppCompatActivity {
 
 
 
-    private void openSettings() {
-        ActivityUtils.startActivity(this, new Intent().setClass(this, TermuxAPISettingsActivity.class));
-    }
 
 }

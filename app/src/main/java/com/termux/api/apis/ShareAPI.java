@@ -92,7 +92,7 @@ public class ShareAPI {
                 sendIntent.setAction(finalIntentAction);
 
                 // Do not create Uri with Uri.parse() and use Uri.Builder().path(), check UriUtils.getUriFilePath().
-                Uri uriToShare = UriUtils.getContentUri(TermuxAPIConstants.TERMUX_API_FILE_SHARE_URI_AUTHORITY, fileToShare.getAbsolutePath());
+                Uri uriToShare = UriUtils.getContentUri(TermuxAPIConstants.fileShareUriAuthority(), fileToShare.getAbsolutePath());
                 sendIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
                 String contentTypeToUse;

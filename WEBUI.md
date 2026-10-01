@@ -61,6 +61,40 @@ ordinary apps cannot.
 Android Settings should show only permissions the app can actually be asked for. A removed method is
 only logged by the receiver (as any unknown method), so the caller times out waiting for the app.
 
+## Removed methods (webui.3)
+
+The app plane keeps only methods that need an app identity: an activity on screen, a per-app system
+service or a runtime permission (inventory: the project's `research/termux-api-inventory.md`). Removed,
+because the page draws it, every manager already has it, or root does it with a stock command:
+`AudioInfo`, `BatteryStatus`, `Brightness`, `Dialog`, `Download`, `JobScheduler` (needs Termux),
+`MediaPlayer`, `MediaScanner`, `NotificationList`, `Toast`, `Usb`, `Vibrate`, `Volume`, `Wallpaper`,
+`WifiConnectionInfo`, `WifiScanInfo`, `WifiEnable`; the media style of `Notification`; the app's Settings
+screen. Permissions removed with them: `ACCESS_WIFI_STATE`, `CHANGE_WIFI_STATE`, `INTERNET`,
+`REQUEST_DELETE_PACKAGES`, `REQUEST_INSTALL_PACKAGES`, `SET_WALLPAPER`, `WRITE_SETTINGS`, `DUMP`,
+`PACKAGE_USAGE_STATS`. Dependencies removed: `androidx.media`, `androidx.preference` (termux-shared may
+still pull the latter in).
+
+An unknown `api_method` now gets an answer (`Unknown api_method: <name>`) instead of only a log line, so a
+caller built for a newer app fails at once.
+
+## Renaming per module
+
+Each module ships its own copy of this APK under its own package, so Android's permission dialog names the
+module and grants stay per module. The release APK is the base; a build tool (flutter_p0g) renames and
+re-signs it:
+
+- **Package:** `com.webui.termux.api.<id>`, where `<id>` is the module id with every character outside
+  `[A-Za-z0-9_]` replaced by `_` (module ids start with a letter).
+- **Binary manifest:** replace every string in the string pool that is exactly `com.webui.termux.api` or
+  starts with `com.webui.termux.api.` by the same string with the new package as prefix. That covers the
+  `package` attribute, the share provider authority (`<package>.sharedfiles`) and its signature permission
+  (`<package>.sharedfiles.READ_WRITE`). Component class names are `com.termux.api.*` and are not touched.
+- **Label:** set the `<application>` `android:label` to the module's name as a literal string.
+- **Sign** with the module developer's key (v2 and v3).
+- **Code:** everything else that must be unique per package (the listen socket `<package>://listen`, the
+  share authority in `ShareAPI`, notification reply intents, the launcher alias toggle) comes from
+  `getPackageName()` at startup (`TermuxAPIConstants.WEBUI_PACKAGE_NAME`), so the code needs no rewrite.
+
 ## Signing
 
 `app/webui-testkey.jks` is a **TEST-ONLY, publicly committed** keystore generated for this fork

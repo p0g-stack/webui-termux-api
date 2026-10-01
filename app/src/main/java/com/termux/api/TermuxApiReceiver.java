@@ -8,38 +8,23 @@ import android.content.Intent;
 import android.provider.Settings;
 import android.widget.Toast;
 
-import com.termux.api.apis.AudioAPI;
-import com.termux.api.apis.BatteryStatusAPI;
-import com.termux.api.apis.BrightnessAPI;
 import com.termux.api.apis.CameraInfoAPI;
 import com.termux.api.apis.CameraPhotoAPI;
 import com.termux.api.apis.ClipboardAPI;
-import com.termux.api.apis.DialogAPI;
-import com.termux.api.apis.DownloadAPI;
 import com.termux.api.apis.FingerprintAPI;
 import com.termux.api.apis.InfraredAPI;
-import com.termux.api.apis.JobSchedulerAPI;
 import com.termux.api.apis.KeystoreAPI;
 import com.termux.api.apis.LocationAPI;
-import com.termux.api.apis.MediaPlayerAPI;
-import com.termux.api.apis.MediaScannerAPI;
 import com.termux.api.apis.MicRecorderAPI;
 import com.termux.api.apis.NfcAPI;
 import com.termux.api.apis.NotificationAPI;
-import com.termux.api.apis.NotificationListAPI;
 import com.termux.api.apis.SAFAPI;
 import com.termux.api.apis.SensorAPI;
 import com.termux.api.apis.ShareAPI;
 import com.termux.api.apis.SpeechToTextAPI;
 import com.termux.api.apis.StorageGetAPI;
 import com.termux.api.apis.TextToSpeechAPI;
-import com.termux.api.apis.ToastAPI;
 import com.termux.api.apis.TorchAPI;
-import com.termux.api.apis.UsbAPI;
-import com.termux.api.apis.VibrateAPI;
-import com.termux.api.apis.VolumeAPI;
-import com.termux.api.apis.WallpaperAPI;
-import com.termux.api.apis.WifiAPI;
 import com.termux.api.activities.TermuxApiPermissionActivity;
 import com.termux.api.util.ResultReturner;
 import com.termux.shared.data.IntentUtils;
@@ -88,24 +73,6 @@ public class TermuxApiReceiver extends BroadcastReceiver {
         }
 
         switch (apiMethod) {
-            case "AudioInfo":
-                AudioAPI.onReceive(this, context, intent);
-                break;
-            case "BatteryStatus":
-                BatteryStatusAPI.onReceive(this, context, intent);
-                break;
-            case "Brightness":
-                if (!Settings.System.canWrite(context)) {
-                    TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.WRITE_SETTINGS);
-                    Toast.makeText(context, "Please enable permission for Termux:API", Toast.LENGTH_LONG).show();
-
-                    // user must enable WRITE_SETTINGS permission this special way
-                    Intent settingsIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
-                    context.startActivity(settingsIntent);
-                    return;
-                }
-                BrightnessAPI.onReceive(this, context, intent);
-                break;
             case "CameraInfo":
                 CameraInfoAPI.onReceive(this, context, intent);
                 break;
@@ -116,12 +83,6 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 break;
             case "Clipboard":
                 ClipboardAPI.onReceive(this, context, intent);
-                break;
-            case "Dialog":
-                DialogAPI.onReceive(context, intent);
-                break;
-            case "Download":
-                DownloadAPI.onReceive(this, context, intent);
                 break;
             case "Fingerprint":
                 FingerprintAPI.onReceive(context, intent);
@@ -136,9 +97,6 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                     InfraredAPI.onReceiveTransmit(this, context, intent);
                 }
                 break;
-            case "JobScheduler":
-                JobSchedulerAPI.onReceive(this, context, intent);
-                break;
             case "Keystore":
                 KeystoreAPI.onReceive(this, intent);
                 break;
@@ -147,12 +105,6 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                     LocationAPI.onReceive(this, context, intent);
                 }
                 break;
-            case "MediaPlayer":
-                MediaPlayerAPI.onReceive(context, intent);
-                break;
-            case "MediaScanner":
-                MediaScannerAPI.onReceive(this, context, intent);
-                break;
             case "MicRecorder":
                 if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.RECORD_AUDIO)) {
                     MicRecorderAPI.onReceive(context, intent);
@@ -160,17 +112,6 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 break;
             case "Nfc":
                 NfcAPI.onReceive(context, intent);
-                break;
-            case "NotificationList":
-                ComponentName cn = new ComponentName(context, NotificationListAPI.NotificationService.class);
-                String flat = Settings.Secure.getString(context.getContentResolver(), "enabled_notification_listeners");
-                final boolean NotificationServiceEnabled = flat != null && flat.contains(cn.flattenToString());
-                if (!NotificationServiceEnabled) {
-                    Toast.makeText(context,"Please give Termux:API Notification Access", Toast.LENGTH_LONG).show();
-                    context.startActivity(new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-                } else {
-                    NotificationListAPI.onReceive(this, context, intent);
-                }
                 break;
             case "Notification":
                 NotificationAPI.onReceiveShowNotification(this, context, intent);
@@ -204,37 +145,14 @@ public class TermuxApiReceiver extends BroadcastReceiver {
             case "TextToSpeech":
                 TextToSpeechAPI.onReceive(context, intent);
                 break;
-            case "Toast":
-                ToastAPI.onReceive(context, intent);
-                break;
             case "Torch":
                 TorchAPI.onReceive(this, context, intent);
                 break;
-            case "Usb":
-                UsbAPI.onReceive(context, intent);
-                break;
-            case "Vibrate":
-                VibrateAPI.onReceive(this, context, intent);
-                break;
-            case "Volume":
-                VolumeAPI.onReceive(this, context, intent);
-                break;
-            case "Wallpaper":
-                WallpaperAPI.onReceive(context, intent);
-                break;
-            case "WifiConnectionInfo":
-                WifiAPI.onReceiveWifiConnectionInfo(this, context, intent);
-                break;
-            case "WifiScanInfo":
-                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.ACCESS_FINE_LOCATION)) {
-                    WifiAPI.onReceiveWifiScanInfo(this, context, intent);
-                }
-                break;
-            case "WifiEnable":
-                WifiAPI.onReceiveWifiEnable(this, context, intent);
-                break;
             default:
+                // Answer instead of only logging, so a caller built for a newer app fails at once
+                // instead of waiting for a connection that never comes.
                 Logger.logError(LOG_TAG, "Unrecognized 'api_method' extra: '" + apiMethod + "'");
+                ResultReturner.returnData(this, intent, out -> out.println("Unknown api_method: " + apiMethod));
         }
     }
 

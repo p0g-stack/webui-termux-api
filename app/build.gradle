@@ -13,8 +13,8 @@ android {
         applicationId "com.webui.termux.api"
         minSdk project.properties.minSdkVersion.toInteger()
         targetSdk project.properties.targetSdkVersion.toInteger()
-        versionCode 1004
-        versionName "0.53.0-webui.2"
+        versionCode 1005
+        versionName "0.53.0-webui.3"
 
         if (appVersionName) versionName = appVersionName
         validateVersionName(versionName)
@@ -88,8 +88,6 @@ dependencies {
 
     implementation "com.google.android.material:material:1.12.0"
     implementation "androidx.biometric:biometric:1.2.0-alpha05"
-    implementation "androidx.media:media:1.7.0"
-    implementation "androidx.preference:preference:1.2.1"
 
     implementation "com.termux.termux-app:termux-shared:8aca6dbbf4"
     // Use if below libraries are published locally by termux-app with `./gradlew publishReleasePublicationToMavenLocal` and used with `mavenLocal()`.

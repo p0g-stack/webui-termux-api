@@ -22,6 +22,9 @@ public class TermuxAPIApplication extends Application {
 
         Context context = getApplicationContext();
 
+        // WebUI fork: the package may be renamed per module after the build (WEBUI.md).
+        TermuxAPIConstants.WEBUI_PACKAGE_NAME = context.getPackageName();
+
         // Set crash handler for the app
         TermuxCrashUtils.setCrashHandler(context);
 
