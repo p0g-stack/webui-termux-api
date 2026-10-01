@@ -1,3 +1,10 @@
+> **This is a repackaged fork: WebUI Termux:API (`com.webui.termux.api`).**
+> It is the [Termux:API](https://github.com/termux/termux-api) app by the [Termux](https://github.com/termux)
+> developers, repackaged under a different application id so it installs alongside real Termux/Termux:API,
+> runs under its own uid (no `sharedUserId` with Termux) and is called by a root process.
+> All credit for the app goes to Termux; it remains GPLv3. See [WEBUI.md](WEBUI.md) for every change
+> and for release/pinning instructions. The rest of this README is upstream's and describes upstream Termux:API.
+
 # Termux API
 
 [![Build status](https://github.com/termux/termux-api/workflows/Build/badge.svg)](https://github.com/termux/termux-api/actions)

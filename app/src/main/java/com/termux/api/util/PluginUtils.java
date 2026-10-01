@@ -4,7 +4,6 @@ import android.app.PendingIntent;
 import android.content.Context;
 
 import com.termux.shared.termux.settings.preferences.TermuxPreferenceConstants.TERMUX_API_APP;
-import com.termux.shared.termux.settings.preferences.TermuxAPIAppSharedPreferences;
 
 public class PluginUtils {
 
@@ -19,7 +18,7 @@ public class PluginUtils {
     public synchronized static int getLastPendingIntentRequestCode(final Context context) {
         if (context == null) return TERMUX_API_APP.DEFAULT_VALUE_KEY_LAST_PENDING_INTENT_REQUEST_CODE;
 
-        TermuxAPIAppSharedPreferences preferences = TermuxAPIAppSharedPreferences.build(context);
+        WebuiAPIAppSharedPreferences preferences = WebuiAPIAppSharedPreferences.build(context);
         if (preferences == null) return TERMUX_API_APP.DEFAULT_VALUE_KEY_LAST_PENDING_INTENT_REQUEST_CODE;
 
         int lastPendingIntentRequestCode = preferences.getLastPendingIntentRequestCode();

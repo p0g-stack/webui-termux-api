@@ -3,7 +3,7 @@
 <!DOCTYPE resources [
     <!ENTITY TERMUX_PACKAGE_NAME "com.termux">
     <!ENTITY TERMUX_APP_NAME "Termux">
-    <!ENTITY TERMUX_API_APP_NAME "Termux:API">
+    <!ENTITY TERMUX_API_APP_NAME "WebUI Termux:API">
     <!ENTITY TERMUX_PREFIX_DIR_PATH "/data/data/com.termux/files/usr">
     ]>
 

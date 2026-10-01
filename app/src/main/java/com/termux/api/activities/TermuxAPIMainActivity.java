@@ -10,6 +10,7 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.termux.api.TermuxAPIApplication;
+import com.termux.api.TermuxAPIConstants;
 import com.termux.api.settings.activities.TermuxAPISettingsActivity;
 import com.termux.api.util.ViewUtils;
 import com.termux.shared.activity.ActivityUtils;
@@ -138,7 +139,7 @@ public class TermuxAPIMainActivity extends AppCompatActivity {
 
 
     private void setChangeLauncherActivityStateViews() {
-        String packageName = TermuxConstants.TERMUX_API_PACKAGE_NAME;
+        String packageName = TermuxAPIConstants.WEBUI_PACKAGE_NAME; // WebUI fork: own package, not com.termux.api
         String className = TermuxConstants.TERMUX_API_APP.TERMUX_API_LAUNCHER_ACTIVITY_NAME;
 
         TextView changeLauncherActivityStateTextView = findViewById(R.id.textview_change_launcher_activity_state_details);

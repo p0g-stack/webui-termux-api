@@ -8,18 +8,22 @@ android {
     def apkVersionTag = System.getenv("TERMUX_API_APP__BUILD__APK_VERSION_TAG") ?: ""
 
     defaultConfig {
-        applicationId "com.termux.api"
+        // WebUI fork: unique application id so it installs alongside real Termux:API.
+        // The Java package / namespace stays "com.termux.api". See WEBUI.md.
+        applicationId "com.webui.termux.api"
         minSdk project.properties.minSdkVersion.toInteger()
         targetSdk project.properties.targetSdkVersion.toInteger()
-        versionCode 1002
-        versionName "0.53.0"
+        versionCode 1003
+        versionName "0.53.0-webui.1"
 
         if (appVersionName) versionName = appVersionName
         validateVersionName(versionName)
 
+        // WebUI fork: TERMUX_PACKAGE_NAME placeholder is no longer used by the manifest
+        // (sharedUserId removed, provider/permission use ${applicationId}). Kept for reference only.
         manifestPlaceholders.TERMUX_PACKAGE_NAME = "com.termux"
         manifestPlaceholders.TERMUX_APP_NAME = "Termux"
-        manifestPlaceholders.TERMUX_API_APP_NAME = "Termux:API"
+        manifestPlaceholders.TERMUX_API_APP_NAME = "WebUI Termux:API"
     }
 
     signingConfigs {
@@ -29,6 +33,19 @@ android {
             storePassword 'xrj45yWGLbsO7W0v'
             keyPassword 'xrj45yWGLbsO7W0v'
         }
+
+        // WebUI fork: TEST-ONLY public key committed to the repo (password is public).
+        // Used so this app does not share a signer with Termux debug builds. Not a trust anchor.
+        webuiTest {
+            storeFile file('webui-testkey.jks')
+            keyAlias 'webui-test'
+            storePassword 'webui-test-only'
+            keyPassword 'webui-test-only'
+        }
+    }
+
+    buildFeatures {
+        buildConfig true
     }
 
     buildTypes {
@@ -36,10 +53,11 @@ android {
             minifyEnabled true
             shrinkResources false // Reproducible builds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+            signingConfig signingConfigs.webuiTest
         }
 
         debug {
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.webuiTest
         }
     }
 
@@ -53,7 +71,7 @@ android {
 
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
-            outputFileName = new File("termux-api-app_" +
+            outputFileName = new File("webui-termux-api_" +
                     (apkVersionTag ? apkVersionTag : "v" + versionName + "+" + variant.buildType.name) + ".apk")
         }
     }

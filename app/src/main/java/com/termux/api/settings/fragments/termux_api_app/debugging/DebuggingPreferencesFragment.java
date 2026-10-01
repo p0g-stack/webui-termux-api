@@ -14,7 +14,7 @@ import androidx.preference.PreferenceManager;
 
 import com.termux.api.R;
 import com.termux.shared.logger.Logger;
-import com.termux.shared.termux.settings.preferences.TermuxAPIAppSharedPreferences;
+import com.termux.api.util.WebuiAPIAppSharedPreferences;
 
 @Keep
 public class DebuggingPreferencesFragment extends PreferenceFragmentCompat {
@@ -38,7 +38,7 @@ public class DebuggingPreferencesFragment extends PreferenceFragmentCompat {
 
         ListPreference logLevelListPreference = findPreference("log_level");
         if (logLevelListPreference != null) {
-            TermuxAPIAppSharedPreferences preferences = TermuxAPIAppSharedPreferences.build(context, true);
+            WebuiAPIAppSharedPreferences preferences = WebuiAPIAppSharedPreferences.build(context, true);
             if (preferences == null) return;
 
             setLogLevelListPreferenceData(logLevelListPreference, context, preferences.getLogLevel(true));
@@ -66,13 +66,13 @@ public class DebuggingPreferencesFragment extends PreferenceFragmentCompat {
 class DebuggingPreferencesDataStore extends PreferenceDataStore {
 
     private final Context mContext;
-    private final TermuxAPIAppSharedPreferences mPreferences;
+    private final WebuiAPIAppSharedPreferences mPreferences;
 
     private static DebuggingPreferencesDataStore mInstance;
 
     private DebuggingPreferencesDataStore(Context context) {
         mContext = context;
-        mPreferences = TermuxAPIAppSharedPreferences.build(context, true);
+        mPreferences = WebuiAPIAppSharedPreferences.build(context, true);
     }
 
     public static synchronized DebuggingPreferencesDataStore getInstance(Context context) {

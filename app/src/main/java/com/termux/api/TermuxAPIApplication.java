@@ -8,7 +8,7 @@ import com.termux.api.util.ResultReturner;
 import com.termux.shared.logger.Logger;
 import com.termux.shared.termux.TermuxConstants;
 import com.termux.shared.termux.crash.TermuxCrashUtils;
-import com.termux.shared.termux.settings.preferences.TermuxAPIAppSharedPreferences;
+import com.termux.api.util.WebuiAPIAppSharedPreferences;
 
 
 public class TermuxAPIApplication extends Application {
@@ -37,7 +37,7 @@ public class TermuxAPIApplication extends Application {
         Logger.setDefaultLogTag(TermuxConstants.TERMUX_API_APP_NAME.replaceAll("[: ]", ""));
 
         // Load the log level from shared preferences and set it to the {@link Logger.CURRENT_LOG_LEVEL}
-        TermuxAPIAppSharedPreferences preferences = TermuxAPIAppSharedPreferences.build(context);
+        WebuiAPIAppSharedPreferences preferences = WebuiAPIAppSharedPreferences.build(context);
         if (preferences == null) return;
         preferences.setLogLevel(null, preferences.getLogLevel(true), commitToFile);
     }

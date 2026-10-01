@@ -364,7 +364,7 @@ public class NotificationAPI {
                                                 String buttonText, String buttonAction,
                                                 String notificationId) {
         return oldIntent.
-                setClassName(TermuxConstants.TERMUX_API_PACKAGE_NAME, TermuxAPIConstants.TERMUX_API_RECEIVER_NAME).
+                setClassName(TermuxAPIConstants.WEBUI_PACKAGE_NAME, TermuxAPIConstants.TERMUX_API_RECEIVER_NAME).
                 putExtra("api_method", "NotificationReply").
                 putExtra("id", notificationId).
                 putExtra("action", buttonAction);

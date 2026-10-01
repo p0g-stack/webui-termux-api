@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:sharedUserId="${TERMUX_PACKAGE_NAME}">
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- WebUI fork: android:sharedUserId="com.termux" removed. This app (com.webui.termux.api)
+         runs under its own uid and does not need the Termux app. See WEBUI.md. -->
 
 
 
@@ -41,7 +43,7 @@
 
     <!-- This permission is not used, but a permission is needed on the sharedfiles contentprovider,
          which will always use FLAG_GRANT_READ_URI_PERMISSION. -->
-    <permission android:name="${TERMUX_PACKAGE_NAME}.sharedfiles.READ_WRITE" android:protectionLevel="signature" />
+    <permission android:name="${applicationId}.sharedfiles.READ_WRITE" android:protectionLevel="signature" />
 
 
 
@@ -142,7 +144,7 @@
         <!-- If you see "Unresolved package" errors for ReportActivity with manifest placeholder,
              ignore it. Android Studio linter is broken and correct package name will be used at build time. -->
         <activity
-            android:name="${TERMUX_PACKAGE_NAME}.shared.activities.ReportActivity"
+            android:name="com.termux.shared.activities.ReportActivity"
             android:exported="false"
             android:documentLaunchMode="intoExisting"
             android:theme="@style/Theme.MarkdownViewActivity.DayNight"
@@ -152,8 +154,8 @@
 
         <provider
             android:name=".apis.ShareAPI$ContentProvider"
-            android:authorities="${TERMUX_PACKAGE_NAME}.sharedfiles"
-            android:permission="${TERMUX_PACKAGE_NAME}.sharedfiles.READ_WRITE"
+            android:authorities="${applicationId}.sharedfiles"
+            android:permission="${applicationId}.sharedfiles.READ_WRITE"
             android:grantUriPermissions="true"
             android:exported="true" />
 
@@ -163,7 +165,7 @@
             android:exported="false" />
 
         <receiver
-            android:name="${TERMUX_PACKAGE_NAME}.shared.activities.ReportActivity$ReportActivityBroadcastReceiver"
+            android:name="com.termux.shared.activities.ReportActivity$ReportActivityBroadcastReceiver"
             android:exported="false"
             tools:ignore="MissingClass" />
 

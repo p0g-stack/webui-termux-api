@@ -1,0 +1,91 @@
+name: WebUI Release
+
+# Builds the signed release APK of com.webui.termux.api and publishes it as a GitHub release
+# with a .sha256 file, on push of a tag named webui-v<versionName>, e.g. webui-v0.53.0-webui.1.
+on:
+  push:
+    tags:
+      - 'webui-v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to build and release (e.g. webui-v0.53.0-webui.1)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build release APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          VERSION_NAME="${TAG#webui-v}"
+          FILE_VERSION_NAME="$(grep -m1 -E '^\s+versionName "' app/build.gradle | sed -E 's/.*versionName "([^"]+)".*/\1/')"
+          if [ "$VERSION_NAME" != "$FILE_VERSION_NAME" ]; then
+            echo "::warning::Tag version '$VERSION_NAME' differs from app/build.gradle versionName '$FILE_VERSION_NAME'; using tag version"
+          fi
+          export TERMUX_API_APP__BUILD__APP_VERSION_NAME="$VERSION_NAME"
+          export TERMUX_API_APP__BUILD__APK_VERSION_TAG="v$VERSION_NAME"
+          chmod +x ./gradlew
+          ./gradlew --no-daemon assembleRelease
+
+          APK_DIR=app/build/outputs/apk/release
+          APK_NAME="webui-termux-api_v${VERSION_NAME}.apk"
+          ls -la "$APK_DIR"
+          test -f "$APK_DIR/$APK_NAME"
+          mkdir -p dist
+          cp "$APK_DIR/$APK_NAME" dist/
+          (cd dist && sha256sum "$APK_NAME" > "$APK_NAME.sha256")
+          cat "dist/$APK_NAME.sha256"
+
+          # Print signer / package info for the release notes
+          BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          "$BT/apksigner" verify --print-certs "dist/$APK_NAME" | tee dist/signer.txt
+          "$BT/aapt2" dump badging "dist/$APK_NAME" | head -1 | tee dist/badging.txt
+
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          echo "APK_NAME=$APK_NAME" >> "$GITHUB_ENV"
+
+      - name: Create GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          SHA256="$(cut -d' ' -f1 "dist/$APK_NAME.sha256")"
+          {
+            echo "WebUI Termux:API ($TAG), repackaged fork of Termux:API (https://github.com/termux/termux-api), GPLv3."
+            echo
+            echo "- Package: \`com.webui.termux.api\`"
+            echo "- Receiver component: \`com.webui.termux.api/com.termux.api.TermuxApiReceiver\`"
+            echo "- APK: \`$APK_NAME\`"
+            echo "- sha256: \`$SHA256\`"
+            echo "- Signed with the public TEST-ONLY key \`app/webui-testkey.jks\` (see WEBUI.md)."
+            echo
+            echo '```'
+            cat dist/badging.txt
+            cat dist/signer.txt
+            echo '```'
+          } > dist/notes.md
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "dist/$APK_NAME" "dist/$APK_NAME.sha256" --clobber
+          else
+            gh release create "$TAG" "dist/$APK_NAME" "dist/$APK_NAME.sha256" \
+              --title "WebUI Termux:API $TAG" --notes-file dist/notes.md
+          fi

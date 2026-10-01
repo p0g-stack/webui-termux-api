@@ -9,7 +9,7 @@ import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
 
 import com.termux.api.R;
-import com.termux.shared.termux.settings.preferences.TermuxAPIAppSharedPreferences;
+import com.termux.api.util.WebuiAPIAppSharedPreferences;
 
 @Keep
 public class TermuxAPIPreferencesFragment extends PreferenceFragmentCompat {
@@ -30,13 +30,13 @@ public class TermuxAPIPreferencesFragment extends PreferenceFragmentCompat {
 class TermuxAPIPreferencesDataStore extends PreferenceDataStore {
 
     private final Context mContext;
-    private final TermuxAPIAppSharedPreferences mPreferences;
+    private final WebuiAPIAppSharedPreferences mPreferences;
 
     private static TermuxAPIPreferencesDataStore mInstance;
 
     private TermuxAPIPreferencesDataStore(Context context) {
         mContext = context;
-        mPreferences = TermuxAPIAppSharedPreferences.build(context, true);
+        mPreferences = WebuiAPIAppSharedPreferences.build(context, true);
     }
 
     public static synchronized TermuxAPIPreferencesDataStore getInstance(Context context) {

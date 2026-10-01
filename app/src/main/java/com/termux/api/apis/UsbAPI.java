@@ -15,6 +15,7 @@ import android.os.IBinder;
 import android.util.JsonWriter;
 import android.util.SparseArray;
 
+import com.termux.api.TermuxAPIConstants;
 import com.termux.api.util.ResultReturner;
 import com.termux.shared.logger.Logger;
 import com.termux.shared.termux.TermuxConstants;
@@ -36,7 +37,7 @@ public class UsbAPI {
 
     protected static SparseArray<UsbDeviceConnection> openDevices = new SparseArray<>();
 
-    protected static final String ACTION_USB_PERMISSION = TermuxConstants.TERMUX_API_PACKAGE_NAME + ".USB_PERMISSION";
+    protected static final String ACTION_USB_PERMISSION = TermuxAPIConstants.WEBUI_PACKAGE_NAME + ".USB_PERMISSION"; // WebUI fork
 
     public static void onReceive(final Context context, final Intent intent) {
         Logger.logDebug(LOG_TAG, "onReceive");

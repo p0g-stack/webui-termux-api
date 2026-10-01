@@ -278,22 +278,22 @@ public abstract class ResultReturner {
                                                          boolean throwException) {
         if (path == null || !path.startsWith("/")) return false;
 
+        // WebUI fork: this app is not in Termux's sharedUserId and Termux need not be installed
+        // (the caller is root). Allow this app's own data directory, plus the Termux app data
+        // directories only if Termux is installed. Abstract socket addresses are recommended.
+        List<String> termuxAppDataDirectories = new java.util.ArrayList<>();
+        termuxAppDataDirectories.add(context.getApplicationInfo().dataDir);
+        termuxAppDataDirectories.add("/data/data/" + context.getPackageName());
         ApplicationInfo termuxApplicationInfo = PackageUtils.getApplicationInfoForPackage(context,
                 TermuxConstants.TERMUX_PACKAGE_NAME);
-        if (termuxApplicationInfo == null) {
-            if (throwException) {
-                throw new RuntimeException("Failed to get ApplicationInfo for the Termux app package: " +
-                    TermuxConstants.TERMUX_PACKAGE_NAME);
-            }
-            return false;
+        if (termuxApplicationInfo != null) {
+            termuxAppDataDirectories.add(termuxApplicationInfo.dataDir);
+            termuxAppDataDirectories.add("/data/data/" + TermuxConstants.TERMUX_PACKAGE_NAME);
         }
-
-        List<String> termuxAppDataDirectories = Arrays.asList(termuxApplicationInfo.dataDir,
-                "/data/data/" + TermuxConstants.TERMUX_PACKAGE_NAME);
         if (!FileUtils.isPathInDirPaths(path, termuxAppDataDirectories, true)) {
             if (throwException) {
                 throw new RuntimeException("The " + label + " \"" + path + "\"" +
-                        " is not under Termux app data directories: " + termuxAppDataDirectories);
+                        " is not under allowed app data directories: " + termuxAppDataDirectories);
             }
             return false;
         }
