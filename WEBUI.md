@@ -83,14 +83,17 @@ Each module ships its own copy of this APK under its own package, so Android's p
 module and grants stay per module. The release APK is the base; a build tool (flutter_p0g) renames and
 re-signs it:
 
-- **Package:** `com.webui.termux.api.<id>`, where `<id>` is the module id with every character outside
-  `[A-Za-z0-9_]` replaced by `_` (module ids start with a letter).
+- **Package:** `com.webui.api.<seg>`, where `<seg>` is the module id with every character outside
+  `[A-Za-z0-9_]` replaced by `_`, prefixed with `m` if it starts with a digit (`demo` ->
+  `com.webui.api.demo`, `my-mod.x` -> `com.webui.api.my_mod_x`). Placed at
+  `system/product/app/WebuiApi_<seg>/WebuiApi_<seg>.apk`.
 - **Binary manifest:** replace every string in the string pool that is exactly `com.webui.termux.api` or
   starts with `com.webui.termux.api.` by the same string with the new package as prefix. That covers the
   `package` attribute, the share provider authority (`<package>.sharedfiles`) and its signature permission
   (`<package>.sharedfiles.READ_WRITE`). Component class names are `com.termux.api.*` and are not touched.
 - **Label:** set the `<application>` `android:label` to the module's name as a literal string.
-- **Sign** with the module developer's key (v2 and v3).
+- **Sign** with the module developer's key (v2), as stock Flutter signs (`key.properties`, else the
+  debug keystore). versionCode is unchanged.
 - **Code:** everything else that must be unique per package (the listen socket `<package>://listen`, the
   share authority in `ShareAPI`, notification reply intents, the launcher alias toggle) comes from
   `getPackageName()` at startup (`TermuxAPIConstants.WEBUI_PACKAGE_NAME`), so the code needs no rewrite.
