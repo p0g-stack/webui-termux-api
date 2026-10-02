@@ -61,6 +61,21 @@ ordinary apps cannot.
 Android Settings should show only permissions the app can actually be asked for. A removed method is
 only logged by the receiver (as any unknown method), so the caller times out waiting for the app.
 
+## Changes in webui.7
+
+- New foreground service `com.termux.api.RootHelperService` that keeps the app
+  from being frozen (Android 14+ freezes cached apps; upstream's
+  `KeepAliveService` is a plain background service and does not prevent it).
+  The module's root helper starts it when it winds up and stops it at its
+  idle shutdown:
+  `am start-foreground-service --user 0 -n <pkg>/com.termux.api.RootHelperService [--ez wakelock true]`,
+  `am stopservice --user 0 -n <pkg>/com.termux.api.RootHelperService`.
+  Silent minimum-importance notification "<app label> is running"; without
+  the notification permission it runs unshown. `wakelock` holds a partial
+  wake lock until stopped (a second start only changes it). Type
+  `specialUse`; adds `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_SPECIAL_USE`,
+  `POST_NOTIFICATIONS`, `WAKE_LOCK`.
+
 ## Changes in webui.6
 
 - `Clipboard` reads work again on Android 10+, where only the focused app may
