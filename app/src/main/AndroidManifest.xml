@@ -107,6 +107,11 @@
             android:excludeFromRecents="true"
             android:exported="false" />
 
+        <activity android:name=".apis.PermissionAPI$NotificationPromptActivity"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:excludeFromRecents="true"
+            android:exported="false" />
+
         <activity android:name=".apis.PermissionAPI$PermissionActivity"
             android:theme="@android:style/Theme.Translucent.NoTitleBar"
             android:noHistory="false"

@@ -41,8 +41,9 @@ public class NotificationAPI {
     private static final String LOG_TAG = "NotificationAPI";
 
     public static final String BIN_SH = TermuxConstants.TERMUX_PREFIX_DIR_PATH + "/bin/sh";
-    private static final String CHANNEL_ID = "termux-notification";
-    private static final String CHANNEL_TITLE = "Termux API notification channel";
+    static final String CHANNEL_ID = "termux-notification";
+    // webui fork: the title users see in the app's notification settings.
+    static final String CHANNEL_TITLE = "Notifications";
     private static final String KEY_TEXT_REPLY = "TERMUX_TEXT_REPLY";
 
     /**

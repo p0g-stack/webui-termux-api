@@ -61,6 +61,22 @@ ordinary apps cannot.
 Android Settings should show only permissions the app can actually be asked for. A removed method is
 only logged by the receiver (as any unknown method), so the caller times out waiting for the app.
 
+## Changes in webui.9
+
+- `Permission` handles `android.permission.POST_NOTIFICATIONS`. The app targets
+  an SDK before Android 13, where an app cannot request it; Android asks by
+  itself, once, when the app starts an activity from a launcher intent after
+  creating a notification channel. A request (`--ez request true`, that
+  permission alone) starts `NotificationPromptActivity`, which does exactly
+  that and answers once Android's prompt closes: `granted`, or
+  `permanentlyDenied` (Android will not ask a legacy app again). When no
+  prompt appears it answers the current state after 1.5 s. Before Android 13
+  the state is whether notifications are enabled. Used by
+  `permission_handler_webui` and `flutter_local_notifications_webui`.
+- The `Notification` method's default channel is titled "Notifications"
+  (upstream "Termux API notification channel"), as users see it in the app's
+  notification settings.
+
 ## Changes in webui.8
 
 - `RootHelperService` never outlives the root helper, even one that is killed
