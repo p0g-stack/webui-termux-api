@@ -61,6 +61,19 @@ ordinary apps cannot.
 Android Settings should show only permissions the app can actually be asked for. A removed method is
 only logged by the receiver (as any unknown method), so the caller times out waiting for the app.
 
+## Changes in webui.8
+
+- `RootHelperService` never outlives the root helper, even one that is killed
+  (KernelSU's manager closed, or swiped from Recents) and so never runs
+  `am stopservice`. On start it listens on the abstract socket `<pkg>/hold`;
+  the root helper connects right after starting it and keeps the connection
+  open for its life, sending nothing. The service stops itself when the last
+  holder's connection ends (EOF or error; the kernel closes a dead process's
+  fds), or when no holder is connected 10 s after a start. Only uid 0 and the
+  app itself may hold it. `am stopservice` still stops it at once. Start it
+  with `am start-foreground-service` (Android 8+ refuses a plain
+  `am startservice` for a background app).
+
 ## Changes in webui.7
 
 - New foreground service `com.termux.api.RootHelperService` that keeps the app
