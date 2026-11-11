@@ -6,8 +6,8 @@ unchanged: `TermuxApiReceiver`, the `api_method` extra, the `socket_input` / `so
 every remaining `apis/*API.java` behave exactly like upstream. The SMS, contacts, call log and telephony
 methods are removed (see "Removed methods").
 
-Goal: an APK that installs **alongside** any real Termux / Termux:API install, is placed by root modules as a
-system app (`/system/product/app/WebuiTermuxApi/`) and is called by a **root** process:
+Goal: an APK that installs **alongside** any real Termux / Termux:API install, is installed by a root
+module under that module's own package ("Renaming per module") and is called by a **root** process:
 
 ```sh
 am broadcast --user 0 -n com.webui.termux.api/com.termux.api.TermuxApiReceiver \
@@ -146,8 +146,10 @@ re-signs it:
 
 - **Package:** `com.webui.api.<seg>`, where `<seg>` is the module id with every character outside
   `[A-Za-z0-9_]` replaced by `_`, prefixed with `m` if it starts with a digit (`demo` ->
-  `com.webui.api.demo`, `my-mod.x` -> `com.webui.api.my_mod_x`). Placed at
-  `system/product/app/WebuiApi_<seg>/WebuiApi_<seg>.apk`.
+  `com.webui.api.demo`, `my-mod.x` -> `com.webui.api.my_mod_x`). Shipped in the module as
+  `webui_app_plane/app.apk` and installed with a package-installer session, not mounted under
+  `system/`: a mounted APK vanishes from its own app under KernelSU's per-app "Umount modules"
+  (flutter_p0g README, webui-packages `docs/plugins.md`).
 - **Binary manifest:** replace every string in the string pool that is exactly `com.webui.termux.api` or
   starts with `com.webui.termux.api.` by the same string with the new package as prefix. That covers the
   `package` attribute, the share provider authority (`<package>.sharedfiles`) and its signature permission
