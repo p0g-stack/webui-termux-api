@@ -4,6 +4,8 @@ name: WebUI Release
 # with a .sha256 file, on push of a tag named webui-v<versionName>, e.g. webui-v0.53.0-webui.1.
 # It can also be run manually (workflow_dispatch) on a branch: it then builds that branch and
 # creates the tag webui-v<versionName from app/build.gradle> at the built commit via the release.
+# Assets are immutable (.github/scripts/immutable-release-upload.sh): the tag must be at the built
+# commit, identical bytes are skipped and different bytes fail; a new build needs a new versionName.
 on:
   push:
     tags:
@@ -55,7 +57,7 @@ jobs:
           cat "dist/$APK_NAME.sha256"
 
           # Print signer / package info for the release notes
-          BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          BT="$(printf '%s\n' "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
           "$BT/apksigner" verify --print-certs "dist/$APK_NAME" | tee dist/signer.txt
           "$BT/aapt2" dump badging "dist/$APK_NAME" | head -1 | tee dist/badging.txt
 
@@ -83,9 +85,6 @@ jobs:
             cat dist/signer.txt
             echo '```'
           } > dist/notes.md
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" "dist/$APK_NAME" "dist/$APK_NAME.sha256" --clobber
-          else
-            gh release create "$TAG" "dist/$APK_NAME" "dist/$APK_NAME.sha256" --target "$GITHUB_SHA" \
-              --title "WebUI Termux:API $TAG" --notes-file dist/notes.md
-          fi
+          .github/scripts/immutable-release-upload.sh -R "$GITHUB_REPOSITORY" --commit "$GITHUB_SHA" "$TAG" \
+            "dist/$APK_NAME" "dist/$APK_NAME.sha256" -- \
+            --title "WebUI Termux:API $TAG" --notes-file dist/notes.md

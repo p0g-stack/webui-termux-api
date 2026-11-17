@@ -191,4 +191,7 @@ Bump both for each release.
    `https://github.com/p0g-stack/webui-termux-api/releases/download/webui-v<versionName>/webui-termux-api_v<versionName>.apk`
    plus the sha256 from the `.sha256` asset (also printed in the release notes), and verify after download.
 
-Releases are never re-tagged; a fix gets a new `-webui.N` suffix.
+Releases are never re-tagged and their assets are never replaced: the workflow uploads through
+`.github/scripts/immutable-release-upload.sh`, which requires the tag to point at the built commit, skips an asset
+whose released bytes are identical and fails, uploading nothing, when they differ. A rebuild therefore needs a new
+`-webui.N` suffix. Check the uploader with `bash .github/scripts/immutable-release-upload-test.sh`.
