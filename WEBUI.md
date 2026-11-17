@@ -214,7 +214,7 @@ use JDK 25; Java source and bytecode compatibility remain 11. Install Android SD
 platform 37 before running `./gradlew assembleDebug assembleRelease` locally.
 The app has no Kotlin sources or separate Kotlin plugin; AGP supplies built-in
 Kotlin support. Desugaring uses 2.1.5, Material 1.14.0, AndroidX biometric's latest
-stable 1.1.0 (not its 1.4 beta), media 1.8.0 and preference 1.2.1.
+stable 1.1.0 (not its 1.4 beta), DocumentFile 1.1.0, media 1.8.0 and preference 1.2.1.
 
 Both `compileSdkVersion` and `targetSdkVersion` are 37, the maximum supported by
 AGP 9.5. [Upstream Termux:API still targets 28](https://github.com/termux/termux-api/blob/fc26ce17e3badf85d4df191af364fcf7798047f1/gradle.properties),
