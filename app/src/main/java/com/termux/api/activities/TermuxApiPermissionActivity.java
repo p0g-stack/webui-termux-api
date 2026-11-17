@@ -3,6 +3,7 @@ package com.termux.api.activities;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.JsonWriter;
 
@@ -16,6 +17,19 @@ import java.util.ArrayList;
 public class TermuxApiPermissionActivity extends Activity {
 
     private static final String LOG_TAG = "TermuxApiPermissionActivity";
+    private boolean requested;
+
+    @Override
+    protected void onCreate(Bundle state) {
+        super.onCreate(state);
+        requested = state != null && state.getBoolean("requested");
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle state) {
+        super.onSaveInstanceState(state);
+        state.putBoolean("requested", requested);
+    }
 
     /**
      * Intent extra containing the permissions to request.
@@ -71,9 +85,15 @@ public class TermuxApiPermissionActivity extends Activity {
         Logger.logVerbose(LOG_TAG, "onResume");
 
         super.onResume();
+        if (requested) return;
+        requested = true;
         ArrayList<String> permissionValues = getIntent().getStringArrayListExtra(PERMISSIONS_EXTRA);
-        PermissionUtils.requestPermissions(this, permissionValues.toArray(new String[0]), 0);
-        finish();
+        requestPermissions(permissionValues.toArray(new String[0]), 0);
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
+        super.onRequestPermissionsResult(requestCode, permissions, results);
+        finish();
+    }
 }

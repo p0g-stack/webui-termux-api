@@ -12,6 +12,7 @@ import android.net.LocalSocket;
 import android.net.LocalSocketAddress;
 import android.net.LocalSocketAddress.Namespace;
 import android.os.ParcelFileDescriptor;
+import android.os.ResultReceiver;
 import android.util.JsonWriter;
 
 import androidx.annotation.NonNull;
@@ -19,7 +20,6 @@ import androidx.annotation.Nullable;
 
 import com.termux.shared.android.PackageUtils;
 import com.termux.shared.data.IntentUtils;
-import com.termux.shared.errors.Error;
 import com.termux.shared.file.FileUtils;
 import com.termux.shared.file.filesystem.FileType;
 import com.termux.shared.logger.Logger;
@@ -34,7 +34,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.List;
 
 public abstract class ResultReturner {
@@ -98,14 +97,14 @@ public abstract class ResultReturner {
      */
     private static final String API_SERVER_STARTTIME_EXTRA = "api_server_starttime";
 
-
     /**
-     * An internal extra intent state which specifies if {@link #returnData(Object, Intent, ResultWriter)}
-     * has already been called. Multiple calls to return data are not allowed.
+     * An internal extra intent state which specifies if {@link #returnData(Object, Intent,
+     * ResultWriter)} has already been called. Multiple calls to return data are not allowed.
      */
     private static final String __RETURN_DATA_CALLED_EXTRA = "__return_data_called";
 
-
+    /** Internal completion callback for a root-launched foreground API request. */
+    public static final String COMPLETION_EXTRA = "com.termux.api.api_completion";
 
     public interface ResultWriter {
         void writeResult(PrintWriter out) throws Exception;
@@ -207,13 +206,13 @@ public abstract class ResultReturner {
         }
 
         public final void cleanupFds() {
-          if (this.pfds[0] != null) {
-            try {
-              this.pfds[0].close();
-            } catch (IOException e) {
-              Logger.logStackTraceWithMessage(LOG_TAG, "Failed to close file descriptor", e);
+            if (this.pfds[0] != null) {
+                try {
+                    this.pfds[0].close();
+                } catch (IOException e) {
+                    Logger.logStackTraceWithMessage(LOG_TAG, "Failed to close file descriptor", e);
+                }
             }
-          }
         }
     }
 
@@ -242,9 +241,13 @@ public abstract class ResultReturner {
         newIntent.putExtra(SOCKET_INPUT_EXTRA, origIntent.getStringExtra(SOCKET_INPUT_EXTRA));
         newIntent.putExtra(API_SERVER_PID_EXTRA, origIntent.getIntExtra(API_SERVER_PID_EXTRA, -1));
         newIntent.putExtra(API_SERVER_UID_EXTRA, origIntent.getIntExtra(API_SERVER_UID_EXTRA, -1));
-        newIntent.putExtra(API_SERVER_STARTTIME_EXTRA, origIntent.getIntExtra(API_SERVER_STARTTIME_EXTRA, -1));
-        newIntent.putExtra(__RETURN_DATA_CALLED_EXTRA, origIntent.getBooleanExtra(__RETURN_DATA_CALLED_EXTRA, false));
-
+        newIntent.putExtra(
+                API_SERVER_STARTTIME_EXTRA, origIntent.getIntExtra(API_SERVER_STARTTIME_EXTRA, -1));
+        newIntent.putExtra(
+                __RETURN_DATA_CALLED_EXTRA,
+                origIntent.getBooleanExtra(__RETURN_DATA_CALLED_EXTRA, false));
+        ResultReceiver completion = origIntent.getParcelableExtra(COMPLETION_EXTRA);
+        if (completion != null) newIntent.putExtra(COMPLETION_EXTRA, completion);
     }
 
     /**
@@ -322,125 +325,171 @@ public abstract class ResultReturner {
         // lambda in case its run in a thread as it will not be included by default.
         final Throwable callerStackTrace = shouldRunThreadForResultRunnable(context) ? new Exception("Called by:") : null;
 
-        final Runnable runnable = () -> {
-            PrintWriter writer = null;
-            LocalSocket outputSocket = null;
-            try {
-                // If `ResultReturner.returnData()` is called again, then attempting to connect to
-                // output/input socket again would fail with `java.io.IOException: Connection refused`,
-                // which is also handled below in the exception catch block, but since the API server
-                // process may have already been killed after receiving result from initial call
-                // to `ResultReturner.returnData()`, an error notification will not be shown.
-                // However, a call to `ResultReturner.returnData()` would be from a faulty logic
-                // in a API command receiver, and the user should be notified, so that they can
-                // report to the developers to fix the logic.
-                if (returnDataCalled) {
-                    throw new IllegalStateException("ResultReturner.returnData() is being called again for the same API command");
-                }
-
-                outputSocket = new LocalSocket();
-                String outputSocketAddress = intent.getStringExtra(SOCKET_OUTPUT_EXTRA);
-                if (outputSocketAddress == null || outputSocketAddress.isEmpty())
-                    throw new IOException("Missing '" + SOCKET_OUTPUT_EXTRA + "' extra");
-                Logger.logDebug(LOG_TAG, "Connecting to output socket \"" + outputSocketAddress + "\"");
-                outputSocket.connect(getApiLocalSocketAddress(ResultReturner.context, "output", outputSocketAddress));
-                writer = new PrintWriter(outputSocket.getOutputStream());
-
-                if (resultWriter != null) {
-                    if(resultWriter instanceof WithAncillaryFd) {
-                      ((WithAncillaryFd) resultWriter).setOutputSocketForFds(outputSocket);
-                    }
-                    if (resultWriter instanceof BinaryOutput) {
-                        BinaryOutput bout = (BinaryOutput) resultWriter;
-                        bout.setOutput(outputSocket.getOutputStream());
-                    }
-                    if (resultWriter instanceof WithInput) {
-                        try (LocalSocket inputSocket = new LocalSocket()) {
-                            String inputSocketAddress = intent.getStringExtra(SOCKET_INPUT_EXTRA);
-                            if (inputSocketAddress == null || inputSocketAddress.isEmpty())
-                                throw new IOException("Missing '" + SOCKET_INPUT_EXTRA + "' extra");
-                            inputSocket.connect(getApiLocalSocketAddress(ResultReturner.context, "input", inputSocketAddress));
-                            ((WithInput) resultWriter).setInput(inputSocket.getInputStream());
-                            resultWriter.writeResult(writer);
+        final Runnable runnable =
+                () -> {
+                    PrintWriter writer = null;
+                    LocalSocket outputSocket = null;
+                    try {
+                        // If `ResultReturner.returnData()` is called again, then attempting to
+                        // connect to
+                        // output/input socket again would fail with `java.io.IOException:
+                        // Connection refused`,
+                        // which is also handled below in the exception catch block, but since the
+                        // API server
+                        // process may have already been killed after receiving result from initial
+                        // call
+                        // to `ResultReturner.returnData()`, an error notification will not be
+                        // shown.
+                        // However, a call to `ResultReturner.returnData()` would be from a faulty
+                        // logic
+                        // in a API command receiver, and the user should be notified, so that they
+                        // can
+                        // report to the developers to fix the logic.
+                        if (returnDataCalled) {
+                            throw new IllegalStateException(
+                                    "ResultReturner.returnData() is being called again for the same API command");
                         }
-                    } else {
-                        resultWriter.writeResult(writer);
+
+                        outputSocket = new LocalSocket();
+                        String outputSocketAddress = intent.getStringExtra(SOCKET_OUTPUT_EXTRA);
+                        if (outputSocketAddress == null || outputSocketAddress.isEmpty())
+                            throw new IOException("Missing '" + SOCKET_OUTPUT_EXTRA + "' extra");
+                        Logger.logDebug(
+                                LOG_TAG,
+                                "Connecting to output socket \"" + outputSocketAddress + "\"");
+                        outputSocket.connect(
+                                getApiLocalSocketAddress(
+                                        ResultReturner.context, "output", outputSocketAddress));
+                        writer = new PrintWriter(outputSocket.getOutputStream());
+
+                        if (resultWriter != null) {
+                            if (resultWriter instanceof WithAncillaryFd) {
+                                ((WithAncillaryFd) resultWriter)
+                                        .setOutputSocketForFds(outputSocket);
+                            }
+                            if (resultWriter instanceof BinaryOutput) {
+                                BinaryOutput bout = (BinaryOutput) resultWriter;
+                                bout.setOutput(outputSocket.getOutputStream());
+                            }
+                            if (resultWriter instanceof WithInput) {
+                                try (LocalSocket inputSocket = new LocalSocket()) {
+                                    String inputSocketAddress =
+                                            intent.getStringExtra(SOCKET_INPUT_EXTRA);
+                                    if (inputSocketAddress == null || inputSocketAddress.isEmpty())
+                                        throw new IOException(
+                                                "Missing '" + SOCKET_INPUT_EXTRA + "' extra");
+                                    inputSocket.connect(
+                                            getApiLocalSocketAddress(
+                                                    ResultReturner.context,
+                                                    "input",
+                                                    inputSocketAddress));
+                                    ((WithInput) resultWriter)
+                                            .setInput(inputSocket.getInputStream());
+                                    resultWriter.writeResult(writer);
+                                }
+                            } else {
+                                resultWriter.writeResult(writer);
+                            }
+                            if (resultWriter instanceof WithAncillaryFd) {
+                                ((WithAncillaryFd) resultWriter).cleanupFds();
+                            }
+                        }
+
+                        Logger.logVerbose(
+                                LOG_TAG,
+                                "Exiting "
+                                        + LOG_TAG
+                                        + " for "
+                                        + getApiMethodLabel(intent)
+                                        + " sent by API server "
+                                        + getApiServerLabel(intent));
+
+                        if (asyncResult != null && receiver.isOrderedBroadcast()) {
+                            asyncResult.setResultCode(0);
+                        } else if (activity != null) {
+                            activity.setResult(0);
+                        }
+                    } catch (Throwable t) {
+                        String header =
+                                "Error in "
+                                        + LOG_TAG
+                                        + " for "
+                                        + getApiMethodLabel(intent)
+                                        + " sent by API server "
+                                        + getApiServerLabel(intent);
+                        String message =
+                                header
+                                        + ":\n\n"
+                                        + IntentUtils.getIntentString(intent)
+                                        + "\n\n"
+                                        + "Error";
+
+                        if (callerStackTrace != null) t.addSuppressed(callerStackTrace);
+
+                        Logger.logStackTraceWithMessage(LOG_TAG, message, t);
+
+                        boolean sendNotification = true;
+                        if ("java.io.IOException: Connection refused".equals(t.toString())) {
+                            Boolean apiServerAlive = isApiServerAlive(intent, true);
+                            // If API server is still alive and connection was still refused, only
+                            // then show notification.
+                            // The client API server process may exit early without waiting for
+                            // result,
+                            // and trying to send data back to it will fail, since that is expected,
+                            // do not
+                            // show notification for that case.
+                            sendNotification = Boolean.TRUE.equals(apiServerAlive);
+                        }
+
+                        if (sendNotification) {
+                            // Only add header to notification text.
+                            TermuxPluginUtils.sendPluginCommandErrorNotification(
+                                    ResultReturner.context,
+                                    LOG_TAG,
+                                    TermuxConstants.TERMUX_API_APP_NAME + " Error",
+                                    header,
+                                    MarkdownUtils.getMarkdownCodeForString(
+                                            Logger.getMessageAndStackTraceString(message, t), true),
+                                    false,
+                                    false,
+                                    true);
+                        }
+
+                        if (asyncResult != null
+                                && receiver != null
+                                && receiver.isOrderedBroadcast()) {
+                            asyncResult.setResultCode(1);
+                        } else if (activity != null) {
+                            activity.setResult(1);
+                        }
+                    } finally {
+                        try {
+                            if (writer != null) writer.close();
+                            if (outputSocket != null) outputSocket.close();
+                        } catch (Exception e) {
+                            Logger.logStackTraceWithMessage(LOG_TAG, "Failed to close", e);
+                        }
+
+                        ResultReceiver completion = intent.getParcelableExtra(COMPLETION_EXTRA);
+                        if (completion != null) completion.send(0, null);
+
+                        try {
+                            if (asyncResult != null) {
+                                asyncResult.finish();
+                            } else if (activity != null) {
+                                activity.finish();
+                            }
+                        } catch (Exception e) {
+                            Logger.logStackTraceWithMessage(LOG_TAG, "Failed to finish", e);
+                        }
                     }
-                    if (resultWriter instanceof WithAncillaryFd) {
-                      ((WithAncillaryFd) resultWriter).cleanupFds();
-                    }
-                }
-
-                Logger.logVerbose(LOG_TAG, "Exiting " + LOG_TAG + " for " + getApiMethodLabel(intent) +
-                    " sent by API server " + getApiServerLabel(intent));
-
-                if (asyncResult != null && receiver.isOrderedBroadcast()) {
-                    asyncResult.setResultCode(0);
-                } else if (activity != null) {
-                    activity.setResult(0);
-                }
-            } catch (Throwable t) {
-                String header = "Error in " + LOG_TAG + " for " + getApiMethodLabel(intent) +
-                    " sent by API server " + getApiServerLabel(intent);
-                String message = header + ":\n\n" +
-                    IntentUtils.getIntentString(intent) + "\n\n" +
-                    "Error";
-
-                if (callerStackTrace != null)
-                    t.addSuppressed(callerStackTrace);
-
-                Logger.logStackTraceWithMessage(LOG_TAG, message, t);
-
-                boolean sendNotification = true;
-                if ("java.io.IOException: Connection refused".equals(t.toString())) {
-                    Boolean apiServerAlive = isApiServerAlive(intent, true);
-                    // If API server is still alive and connection was still refused, only then show notification.
-                    // The client API server process may exit early without waiting for result,
-                    // and trying to send data back to it will fail, since that is expected, do not
-                    // show notification for that case.
-                    sendNotification = Boolean.TRUE.equals(apiServerAlive);
-                }
-
-                if (sendNotification) {
-                    // Only add header to notification text.
-                    TermuxPluginUtils.sendPluginCommandErrorNotification(ResultReturner.context, LOG_TAG,
-                        TermuxConstants.TERMUX_API_APP_NAME + " Error", header,
-                        MarkdownUtils.getMarkdownCodeForString(Logger.getMessageAndStackTraceString(message, t), true),
-                        false, false, true);
-                }
-
-                if (asyncResult != null && receiver != null && receiver.isOrderedBroadcast()) {
-                    asyncResult.setResultCode(1);
-                } else if (activity != null) {
-                    activity.setResult(1);
-                }
-            } finally {
-                try {
-                    if (writer != null)
-                        writer.close();
-                    if (outputSocket != null)
-                        outputSocket.close();
-                } catch (Exception e) {
-                    Logger.logStackTraceWithMessage(LOG_TAG, "Failed to close", e);
-                }
-
-                try {
-                    if (asyncResult != null) {
-                        asyncResult.finish();
-                    } else if (activity != null) {
-                        activity.finish();
-                    }
-                } catch (Exception e) {
-                    Logger.logStackTraceWithMessage(LOG_TAG, "Failed to finish", e);
-                }
-            }
-        };
+                };
 
         if (shouldRunThreadForResultRunnable(context)) {
             new Thread(runnable).start();
         } else {
             runnable.run();
-       }
+        }
     }
 
 

@@ -32,7 +32,6 @@ import com.termux.shared.termux.TermuxConstants.TERMUX_APP.TERMUX_SERVICE;
 
 import java.io.File;
 import java.io.PrintWriter;
-import java.lang.reflect.Field;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -306,7 +305,7 @@ public class NotificationAPI {
                             buttonText, buttonAction, notificationId);
                     notification.addAction(action);
                 } else {
-                PendingIntent pi = createAction(context, buttonAction);
+                    PendingIntent pi = createAction(context, buttonAction);
                     notification.addAction(new NotificationCompat.Action(android.R.drawable.ic_input_add, buttonText, pi));
                 }
             }
@@ -348,10 +347,13 @@ public class NotificationAPI {
 
         // Build a PendingIntent for the reply action to trigger.
         PendingIntent replyPendingIntent =
-                PendingIntent.getBroadcast(context,
+                PendingIntent.getBroadcast(
+                        context,
                         buttonNum,
-                        getMessageReplyIntent((Intent)intent.clone(), buttonText, buttonAction, notificationId),
-                        PendingIntent.FLAG_UPDATE_CURRENT);
+                        getMessageReplyIntent(
+                                (Intent) intent.clone(), buttonText, buttonAction, notificationId),
+                        PendingIntent.FLAG_UPDATE_CURRENT
+                                | PendingIntentUtils.getPendingIntentMutableFlag());
 
         // Create the reply action and add the remote input.
         return new NotificationCompat.Action.Builder(R.drawable.ic_event_note_black_24dp,

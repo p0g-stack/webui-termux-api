@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.provider.Settings;
 import android.widget.Toast;
 
+import com.termux.api.activities.TermuxApiPermissionActivity;
 import com.termux.api.apis.AudioAPI;
 import com.termux.api.apis.BatteryStatusAPI;
 import com.termux.api.apis.BrightnessAPI;
@@ -41,7 +42,6 @@ import com.termux.api.apis.VibrateAPI;
 import com.termux.api.apis.VolumeAPI;
 import com.termux.api.apis.WallpaperAPI;
 import com.termux.api.apis.WifiAPI;
-import com.termux.api.activities.TermuxApiPermissionActivity;
 import com.termux.api.util.ResultReturner;
 import com.termux.shared.data.IntentUtils;
 import com.termux.shared.logger.Logger;
@@ -144,7 +144,11 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 KeystoreAPI.onReceive(this, intent);
                 break;
             case "Location":
-                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.ACCESS_FINE_LOCATION)) {
+                if (TermuxApiPermissionActivity.checkAndRequestPermissions(
+                        context,
+                        intent,
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION)) {
                     LocationAPI.onReceive(this, context, intent);
                 }
                 break;
@@ -230,7 +234,11 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 WifiAPI.onReceiveWifiConnectionInfo(this, context, intent);
                 break;
             case "WifiScanInfo":
-                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.ACCESS_FINE_LOCATION)) {
+                if (TermuxApiPermissionActivity.checkAndRequestPermissions(
+                        context,
+                        intent,
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION)) {
                     WifiAPI.onReceiveWifiScanInfo(this, context, intent);
                 }
                 break;

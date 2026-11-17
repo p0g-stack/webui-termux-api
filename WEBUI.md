@@ -61,6 +61,40 @@ ordinary apps cannot.
 Android Settings should show only permissions the app can actually be asked for. A removed method is
 only logged by the receiver (as any unknown method), so the caller times out waiting for the app.
 
+## Changes in webui.10
+
+- Build and target Android API 37. Minimum SDK remains 24; application ID,
+  namespace, receiver and public test-only signing key are unchanged.
+- `Permission` requests `POST_NOTIFICATIONS` through Android's normal runtime
+  dialog on Android 13+, replacing the legacy launcher/prompt timing workaround.
+  Notification inline replies explicitly use a mutable PendingIntent.
+- On Android 11+, broad `READ_EXTERNAL_STORAGE` / `WRITE_EXTERNAL_STORAGE`
+  requests use all-files access settings and report `Environment.isExternalStorageManager()`;
+  `MANAGE_EXTERNAL_STORAGE` can also be requested directly. Returning from settings
+  rechecks the actual grant, without treating a settings denial as permanent.
+  Android 10 retains its legacy-storage opt-in. Document picker/SAF grants stay unchanged;
+  all-files access does not bypass Android's restrictions on other apps' private data.
+- Fine location is requested together with coarse location. Background location
+  settings are handled separately after foreground permission requests.
+- On Android 16+, `BODY_SENSORS` requests map to `health.READ_HEART_RATE` for
+  SensorManager heart-rate access. The app declares Android's required sensor
+  permission-usage explanation. Granular media permissions and speech/TTS/share
+  package-visibility queries are declared.
+- The authorized root helper launches the non-exported `ApiDispatchActivity` for
+  `CameraPhoto`, `MicRecorder`, `Location`, `SpeechToText` and `Sensor`, with the
+  same method/socket extras. Dispatch waits until the activity is visible, then
+  enables the requested, already-granted camera/microphone/location/health foreground
+  service capability. Capabilities last for the root helper's held lifetime, not
+  beyond it. The existing special-use notification and holder authorization remain.
+  Socket completion finishes the dispatcher; rotation does not replay requests,
+  and pausing is not cancellation. Sensor streams retain ownership of their sockets.
+  Other broadcasts use the root caller's `--allow-background-activity-starts` option.
+- `WifiEnable` retains its `enabled` boolean but is executed by the already-authorized
+  root helper as `cmd wifi set-wifi-enabled enabled|disabled`. Calling the APK directly
+  returns `{"error":"WifiEnable needs root","code":"needs_root"}` instead of a silent
+  failure. The APK never calls `su` or requests another root grant. Use the matching
+  `flutter_webui_root` / `webui_app_plane` client for this release.
+
 ## Changes in webui.9
 
 - `Permission` handles `android.permission.POST_NOTIFICATIONS`. The app targets
@@ -171,6 +205,30 @@ re-signs it:
 Anyone can sign an APK with it; it provides no authenticity. Integrity comes from pinning the release
 asset by URL + sha256. It is deliberately different from upstream's `testkey_untrusted.jks` so this app does
 not share a signer with Termux debug builds. Both the `release` and `debug` build types use it.
+
+## Build toolchain and Android runtime contract
+
+Build with Temurin JDK 25 (current LTS), Gradle 9.9.1 and Android Gradle plugin
+9.5.1. The wrapper verifies the official distribution SHA-256. Both CI workflows
+use JDK 25; Java source and bytecode compatibility remain 11. Install Android SDK
+platform 37 before running `./gradlew assembleDebug assembleRelease` locally.
+The app has no Kotlin sources or separate Kotlin plugin; AGP supplies built-in
+Kotlin support. Desugaring uses 2.1.5, Material 1.14.0, AndroidX biometric's latest
+stable 1.1.0 (not its 1.4 beta), media 1.8.0 and preference 1.2.1.
+
+Both `compileSdkVersion` and `targetSdkVersion` are 37, the maximum supported by
+AGP 9.5. [Upstream Termux:API still targets 28](https://github.com/termux/termux-api/blob/fc26ce17e3badf85d4df191af364fcf7798047f1/gradle.properties),
+and [Termux's documented reason](https://github.com/termux/termux-packages/wiki/Termux-and-Android-10)
+is Android 10's W^X restriction on executing files in writable app data. This fork
+does not execute app-data binaries and has no shared Termux UID, so that reason
+does not apply here. The webui.10 changes above migrate the actual permission,
+storage, foreground-service and Wi-Fi contracts instead of retaining that target.
+
+APK naming uses the public `androidComponents.onVariants` / `VariantOutput.outputFileName`
+API. Both version environment overrides and the default `v<version>+<buildType>`
+names are retained. Native-library exclusions use `packaging.jniLibs`; the AGP 9
+ProGuard defaults retain this fork's explicit no-obfuscation/no-optimization
+release behavior. Package identity and both build types' signing key are unchanged.
 
 ## Version
 

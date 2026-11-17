@@ -8,8 +8,8 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.net.LocalSocket;
-import android.net.LocalSocketAddress;
 import android.os.IBinder;
+import android.os.ResultReceiver;
 
 import com.termux.api.util.ResultReturner;
 import com.termux.shared.logger.Logger;
@@ -20,10 +20,9 @@ import org.json.JSONObject;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.Semaphore;
-
 
 /**
  * API that allows you to listen to all sensors on device
@@ -84,6 +83,12 @@ public class SensorAPI {
             if (result.type == ResultType.SINGLE) {
                 // post one-time result now, rather than an active stream
                 postSensorCommandResult(context, intent, result);
+            } else {
+                // The streaming writer now owns the socket; the root-held health
+                // foreground service keeps sensor access alive after the activity.
+                ResultReceiver completion =
+                        intent.getParcelableExtra(ResultReturner.COMPLETION_EXTRA);
+                if (completion != null) completion.send(0, null);
             }
             return Service.START_NOT_STICKY;
         }

@@ -1,11 +1,13 @@
 package com.termux.api;
 
+import android.Manifest;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.net.LocalServerSocket;
 import android.net.LocalSocket;
@@ -26,25 +28,27 @@ import java.util.List;
 /**
  * Keeps this app running while the module's root helper runs (webui fork).
  *
- * Android 14+ freezes cached apps, and upstream's {@link KeepAliveService} is a plain
- * background service, which does not stop that. Like the Termux app, this is a foreground
- * service with a silent, low-priority notification ("&lt;app label&gt; is running") and, on
- * request, a partial wake lock. Without the notification permission it still runs, unshown.
+ * <p>Android 14+ freezes cached apps, and upstream's {@link KeepAliveService} is a plain background
+ * service, which does not stop that. Like the Termux app, this is a foreground service with a
+ * silent, low-priority notification ("&lt;app label&gt; is running") and, on request, a partial
+ * wake lock. Without the notification permission it still runs, unshown.
  *
- * Root starts it when the root helper winds up and stops it at the helper's idle shutdown:
+ * <p>Root starts it when the root helper winds up and stops it at the helper's idle shutdown:
+ *
  * <pre>
  * am start-foreground-service --user 0 -n &lt;pkg&gt;/com.termux.api.RootHelperService [--ez wakelock true]
  * am stopservice --user 0 -n &lt;pkg&gt;/com.termux.api.RootHelperService
  * </pre>
+ *
  * Starting it again only changes the wake lock.
  *
- * It never outlives its holders, so a root helper that is killed (the manager closed or
- * swiped away) cannot leave it behind: on start it listens on the abstract socket
- * {@code <pkg>/hold}. The root helper connects right after starting it and keeps the
- * connection open for its whole life; it sends nothing. The service stops itself when the
- * last holder's connection ends (EOF or error, as when the kernel closes a dead process's
- * fds), or when no holder is connected {@value #HOLD_WAIT_MS} ms after a start. Only root
- * (uid 0) and this app may hold it. {@code am stopservice} still stops it at once.
+ * <p>It never outlives its holders, so a root helper that is killed (the manager closed or swiped
+ * away) cannot leave it behind: on start it listens on the abstract socket {@code <pkg>/hold}. The
+ * root helper connects right after starting it and keeps the connection open for its whole life; it
+ * sends nothing. The service stops itself when the last holder's connection ends (EOF or error, as
+ * when the kernel closes a dead process's fds), or when no holder is connected {@value
+ * #HOLD_WAIT_MS} ms after a start. Only root (uid 0) and this app may hold it. {@code am
+ * stopservice} still stops it at once.
  */
 public class RootHelperService extends Service {
 
@@ -64,9 +68,58 @@ public class RootHelperService extends Service {
     private LocalServerSocket holdServer;
     private volatile boolean destroyed;
 
+    private static RootHelperService running;
+    private int sensitiveTypes;
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        running = this;
+    }
+
+    /** Enables only the granted capability requested from a visible dispatcher. */
+    static void prepareApi(Context context, String method) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return;
+        int type;
+        String permission;
+        switch (method) {
+            case "CameraPhoto":
+                type = ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA;
+                permission = Manifest.permission.CAMERA;
+                break;
+            case "MicRecorder":
+            case "SpeechToText":
+                type = ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
+                permission = Manifest.permission.RECORD_AUDIO;
+                break;
+            case "Location":
+                type = ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION;
+                permission = Manifest.permission.ACCESS_FINE_LOCATION;
+                break;
+            case "Sensor":
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return;
+                type = ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH;
+                permission =
+                        Build.VERSION.SDK_INT >= 36
+                                ? "android.permission.health.READ_HEART_RATE"
+                                : Manifest.permission.BODY_SENSORS;
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported foreground API: " + method);
+        }
+        // Let the existing API permission path answer and request missing grants.
+        if (context.checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) return;
+        RootHelperService service = running;
+        if (service == null || service.destroyed) {
+            throw new IllegalStateException("API needs the authorized root helper to be running");
+        }
+        service.sensitiveTypes |= type;
+        service.startInForeground();
+    }
+
     /**
-     * The latest start. Stops pass the id they saw, so a start that arrives in between
-     * (a new root helper) keeps the service.
+     * The latest start. Stops pass the id they saw, so a start that arrives in between (a new root
+     * helper) keeps the service.
      */
     private volatile int lastStartId;
 
@@ -107,14 +160,19 @@ public class RootHelperService extends Service {
         } else {
             builder = new Notification.Builder(this).setPriority(Notification.PRIORITY_MIN);
         }
-        Notification notification = builder
-                .setContentTitle(text)
-                .setSmallIcon(R.drawable.ic_event_note_black_24dp)
-                .setOngoing(true)
-                .setShowWhen(false)
-                .build();
+        Notification notification =
+                builder.setContentTitle(text)
+                        .setSmallIcon(R.drawable.ic_event_note_black_24dp)
+                        .setOngoing(true)
+                        .setShowWhen(false)
+                        .build();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+            startForeground(
+                    NOTIFICATION_ID,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE | sensitiveTypes);
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFICATION_ID, notification, sensitiveTypes);
         } else {
             startForeground(NOTIFICATION_ID, notification);
         }
@@ -246,6 +304,7 @@ public class RootHelperService extends Service {
     @Override
     public void onDestroy() {
         destroyed = true;
+        if (running == this) running = null;
         main.removeCallbacks(stopIfUnheld);
         LocalServerSocket server;
         List<LocalSocket> held;

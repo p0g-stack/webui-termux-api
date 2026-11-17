@@ -1,11 +1,12 @@
 apply plugin: 'com.android.application'
 
+def apkVersionTag = providers.environmentVariable("TERMUX_API_APP__BUILD__APK_VERSION_TAG").orElse("")
+
 android {
     namespace "com.termux.api"
 
     compileSdk project.properties.compileSdkVersion.toInteger()
     def appVersionName = System.getenv("TERMUX_API_APP__BUILD__APP_VERSION_NAME") ?: ""
-    def apkVersionTag = System.getenv("TERMUX_API_APP__BUILD__APK_VERSION_TAG") ?: ""
 
     defaultConfig {
         // WebUI fork: unique application id so it installs alongside real Termux:API.
@@ -13,8 +14,8 @@ android {
         applicationId "com.webui.termux.api"
         minSdk project.properties.minSdkVersion.toInteger()
         targetSdk project.properties.targetSdkVersion.toInteger()
-        versionCode 1011
-        versionName "0.53.0-webui.9"
+        versionCode 1012
+        versionName "0.53.0-webui.10"
 
         if (appVersionName) versionName = appVersionName
         validateVersionName(versionName)
@@ -52,7 +53,7 @@ android {
         release {
             minifyEnabled true
             shrinkResources false // Reproducible builds
-            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             signingConfig signingConfigs.webuiTest
         }
 
@@ -69,26 +70,32 @@ android {
         targetCompatibility JavaVersion.VERSION_11
     }
 
-    applicationVariants.all { variant ->
-        variant.outputs.all { output ->
-            outputFileName = new File("webui-termux-api_" +
-                    (apkVersionTag ? apkVersionTag : "v" + versionName + "+" + variant.buildType.name) + ".apk")
+    packaging {
+        jniLibs {
+            // These upstream JNI libraries are unused by this fork.
+            excludes += ["lib/*/libtermux.so", "lib/*/liblocal-socket.so"]
         }
     }
+}
 
-    packagingOptions {
-        // Remove terminal-emulator and termux-shared JNI libs added via termux-shared dependency
-        exclude "lib/*/libtermux.so"
-        exclude "lib/*/liblocal-socket.so"
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        variant.outputs.each { output ->
+            output.outputFileName.set(apkVersionTag.flatMap { tag ->
+                output.versionName.map { name ->
+                    "webui-termux-api_${tag ?: "v${name}+${variant.buildType}"}.apk".toString()
+                }
+            })
+        }
     }
 }
 
 dependencies {
-    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:1.1.5"
+    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.1.5"
 
-    implementation "com.google.android.material:material:1.12.0"
-    implementation "androidx.biometric:biometric:1.2.0-alpha05"
-    implementation "androidx.media:media:1.7.0"
+    implementation "com.google.android.material:material:1.14.0"
+    implementation "androidx.biometric:biometric:1.1.0"
+    implementation "androidx.media:media:1.8.0"
     implementation "androidx.preference:preference:1.2.1"
 
     implementation "com.termux.termux-app:termux-shared:8aca6dbbf4"
@@ -100,7 +107,7 @@ dependencies {
     implementation "com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava"
 }
 
-task versionName {
+tasks.register('versionName') {
     doLast {
         print android.defaultConfig.versionName
     }

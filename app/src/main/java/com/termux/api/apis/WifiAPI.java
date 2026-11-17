@@ -122,17 +122,25 @@ public class WifiAPI {
         });
     }
 
-    public static void onReceiveWifiEnable(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
+    public static void onReceiveWifiEnable(
+            TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
         Logger.logDebug(LOG_TAG, "onReceiveWifiEnable");
 
-        ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
-            @Override
-            public void writeJson(JsonWriter out) {
-                WifiManager manager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-                boolean state = intent.getBooleanExtra("enabled", false);
-                manager.setWifiEnabled(state);
-            }
-        });
+        ResultReturner.returnData(
+                apiReceiver,
+                intent,
+                new ResultReturner.ResultJsonWriter() {
+                    @Override
+                    public void writeJson(JsonWriter out) throws java.io.IOException {
+                        // The authorized root helper executes cmd wifi. This app must not
+                        // obtain a separate su grant or silently call the blocked SDK API.
+                        out.beginObject()
+                                .name("error")
+                                .value("WifiEnable needs root")
+                                .name("code")
+                                .value("needs_root")
+                                .endObject();
+                    }
+                });
     }
-
 }
